@@ -96,6 +96,34 @@ export class SubmissionsService {
     }
   }
 
+  async create(formId: string, dto: any) {
+    await this.ensureFormExists(formId);
+
+    const submission = await this.prisma.submission.create({
+      data: {
+        formId,
+        fullName: dto.fullName,
+        email: dto.email,
+        phone: dto.phone,
+        stateCode: dto.stateCode,
+        data: {
+          state: dto.state,
+          ninNumber: dto.ninNumber,
+        },
+      },
+      include: submissionInclude,
+    });
+
+    await this.auditLogs.record({
+      adminId: null,
+      action: 'SUBMISSION_CREATED',
+      entityType: 'Submission',
+      entityId: submission.id,
+    });
+
+    return this.withSignedFileUrls(submission);
+  }
+
   private async withSignedFileUrls<T extends { uploadedFiles: Array<{ storageKey: string | null; storedFilename: string }> }>(
     submission: T,
   ) {
