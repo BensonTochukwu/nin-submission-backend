@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Form" ADD COLUMN "lagosEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "Form" ADD COLUMN "ondoEnabled" BOOLEAN NOT NULL DEFAULT true;

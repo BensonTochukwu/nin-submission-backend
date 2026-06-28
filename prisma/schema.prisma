@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum FormFieldType {
+  TEXT
+  EMAIL
+  PHONE
+  TEXTAREA
+  DROPDOWN
+  RADIO
+  CHECKBOX
+  DATE
+  FILE
+}
+
+enum SubmissionStatus {
+  PENDING
+  REVIEWED
+  APPROVED
+  REJECTED
+}
+
+enum CompressionStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+  NEEDS_REVIEW
+}
+
+model Admin {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         AdminRole  @default(ADMIN)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  createdForms Form[]
+  auditLogs    AuditLog[]
+}
+
+model Form {
+  id                      String      @id @default(cuid())
+  title                   String
+  description             String?
+  slug                    String      @unique
+  isActive                Boolean     @default(true)
+  allowDuplicateStateCode Boolean     @default(false)
+  lagosEnabled            Boolean     @default(true)
+  ondoEnabled             Boolean     @default(true)
+  closesAt                DateTime?
+  createdById             String
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+
+  createdBy   Admin        @relation(fields: [createdById], references: [id])
+  fields      FormField[]
+  submissions Submission[]
+}
+
+model FormField {
+  id         String        @id @default(cuid())
+  formId     String
+  label      String
+  fieldKey   String
+  type       FormFieldType
+  isRequired Boolean       @default(false)
+  options    Json?
+  sortOrder  Int           @default(0)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@unique([formId, fieldKey])
+  @@index([formId])
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  formId      String
+  stateCode   String
+  fullName    String?
+  email       String?
+  phone       String?
+  data        Json?
+  status      SubmissionStatus @default(PENDING)
+  submittedAt DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  form          Form           @relation(fields: [formId], references: [id], onDelete: Cascade)
+  uploadedFiles UploadedFile[]
+
+  @@index([formId])
+  @@index([formId, stateCode])
+}
+
+model UploadedFile {
+  id                String            @id @default(cuid())
+  submissionId      String
+  fieldKey          String
+  originalFilename  String
+  storedFilename    String
+  fileUrl           String?
+  storageKey        String?
+  tempPath          String?
+  mimeType          String
+  originalSize      Int
+  compressedSize    Int?
+  compressionStatus CompressionStatus @default(PENDING)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+  @@index([compressionStatus])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  admin Admin? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([adminId])
+  @@index([entityType, entityId])
+}

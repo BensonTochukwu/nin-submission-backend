@@ -1,0 +1,250 @@
+{
+  "info": {
+    "name": "NYSC Form Collector Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "token", "value": "" },
+    { "key": "adminId", "value": "" },
+    { "key": "formId", "value": "" },
+    { "key": "formSlug", "value": "" },
+    { "key": "submissionId", "value": "" },
+    { "key": "uploadedFileId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Auth Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) pm.collectionVariables.set('token', json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@nysc.local\",\n  \"password\": \"Password123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Current Admin",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admins",
+      "item": [
+        {
+          "name": "Create Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('adminId', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/admins",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Operations Admin\",\n  \"email\": \"ops{{$timestamp}}@nysc.local\",\n  \"password\": \"Password123!\",\n  \"role\": \"ADMIN\",\n  \"isActive\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "List Admins",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admins"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Forms",
+      "item": [
+        {
+          "name": "Create Form",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('formId', json.id);",
+                  "if (json.slug) pm.collectionVariables.set('formSlug', json.slug);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/forms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"NYSC NIN Upload {{$timestamp}}\",\n  \"description\": \"Collect NYSC member details and NIN upload.\",\n  \"allowDuplicateStateCode\": false,\n  \"isActive\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Add Default Fields",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/forms/{{formId}}/fields/bulk",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fields\": [\n    {\n      \"label\": \"State\",\n      \"fieldKey\": \"state\",\n      \"type\": \"DROPDOWN\",\n      \"isRequired\": true,\n      \"options\": { \"choices\": [\"LAGOS\", \"ONDO\"] },\n      \"sortOrder\": 1\n    },\n    {\n      \"label\": \"Name\",\n      \"fieldKey\": \"name\",\n      \"type\": \"TEXT\",\n      \"isRequired\": true,\n      \"sortOrder\": 2\n    },\n    {\n      \"label\": \"Email\",\n      \"fieldKey\": \"email\",\n      \"type\": \"EMAIL\",\n      \"isRequired\": true,\n      \"sortOrder\": 3\n    },\n    {\n      \"label\": \"Phone Number\",\n      \"fieldKey\": \"phone\",\n      \"type\": \"PHONE\",\n      \"isRequired\": true,\n      \"sortOrder\": 4\n    },\n    {\n      \"label\": \"State Code\",\n      \"fieldKey\": \"stateCode\",\n      \"type\": \"TEXT\",\n      \"isRequired\": true,\n      \"sortOrder\": 5\n    },\n    {\n      \"label\": \"NIN Number\",\n      \"fieldKey\": \"ninNumber\",\n      \"type\": \"TEXT\",\n      \"isRequired\": true,\n      \"sortOrder\": 6\n    },\n    {\n      \"label\": \"NIN Upload\",\n      \"fieldKey\": \"ninPdf\",\n      \"type\": \"FILE\",\n      \"isRequired\": true,\n      \"sortOrder\": 7\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Generate QR Code",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms/{{formId}}/qr-code"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "Get Public Form",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/public/forms/{{formSlug}}"
+          }
+        },
+        {
+          "name": "Submit Public Form With NIN Upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.submissionId) pm.collectionVariables.set('submissionId', json.submissionId);",
+                  "if (json.uploadedFileId) pm.collectionVariables.set('uploadedFileId', json.uploadedFileId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/public/forms/{{formSlug}}/submit",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "state", "value": "LAGOS", "type": "text" },
+                { "key": "name", "value": "Jane Corps Member", "type": "text" },
+                { "key": "email", "value": "jane@example.com", "type": "text" },
+                { "key": "phone", "value": "+2348012345678", "type": "text" },
+                { "key": "stateCode", "value": "LA/24B/1234", "type": "text" },
+                { "key": "ninNumber", "value": "12345678901", "type": "text" },
+                { "key": "fields", "value": "{\"platoon\":\"1\",\"lga\":\"Ikeja\"}", "type": "text" },
+                { "key": "ninPdf", "type": "file", "src": [] }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Submissions",
+      "item": [
+        {
+          "name": "View Submissions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms/{{formId}}/submissions"
+          }
+        },
+        {
+          "name": "Get Submission",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/submissions/{{submissionId}}"
+          }
+        },
+        {
+          "name": "Update Submission Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/submissions/{{submissionId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"REVIEWED\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exports",
+      "item": [
+        {
+          "name": "Export Excel",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms/{{formId}}/export/excel"
+          }
+        },
+        {
+          "name": "Export CSV",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms/{{formId}}/export/csv"
+          }
+        },
+        {
+          "name": "Download NIN PDFs ZIP",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/forms/{{formId}}/export/nins.zip"
+          }
+        }
+      ]
+    }
+  ]
+}
